@@ -306,6 +306,12 @@ class _JustAudioPlayer extends AudioPlayerPlatform {
   }
 
   @override
+  Future<SetWebSinkIdResponse> setWebSinkId(SetWebSinkIdRequest request) {
+    _playerAudioHandler.customSetWebSinkId(request);
+    throw SetWebSinkIdResponse();
+  }
+
+  @override
   Future<SeekResponse> seek(SeekRequest request) =>
       _playerAudioHandler.customPlayerSeek(request);
 
@@ -548,10 +554,17 @@ class _PlayerAudioHandler extends BaseAudioHandler
     return await (await _player).setWebCrossOrigin(request);
   }
 
+  Future<SetWebSinkIdResponse> customSetWebSinkId(
+      SetWebSinkIdRequest request) async {
+    return await (await _player).setWebSinkId(request);
+  }
+
   Future<ConcatenatingInsertAllResponse> customConcatenatingInsertAll(
       ConcatenatingInsertAllRequest request) async {
     final cat = _source!.findCat(request.id)!;
     cat.children.insertAll(request.index, request.children);
+    cat.shuffleOrder
+        .replaceRange(0, cat.shuffleOrder.length, request.shuffleOrder);
     _updateShuffleIndices();
     _broadcastStateIfActive();
     _updateQueue();
@@ -562,6 +575,8 @@ class _PlayerAudioHandler extends BaseAudioHandler
       ConcatenatingRemoveRangeRequest request) async {
     final cat = _source!.findCat(request.id)!;
     cat.children.removeRange(request.startIndex, request.endIndex);
+    cat.shuffleOrder
+        .replaceRange(0, cat.shuffleOrder.length, request.shuffleOrder);
     _updateShuffleIndices();
     _broadcastStateIfActive();
     _updateQueue();
@@ -573,6 +588,8 @@ class _PlayerAudioHandler extends BaseAudioHandler
     final cat = _source!.findCat(request.id)!;
     cat.children
         .insert(request.newIndex, cat.children.removeAt(request.currentIndex));
+    cat.shuffleOrder
+        .replaceRange(0, cat.shuffleOrder.length, request.shuffleOrder);
     _updateShuffleIndices();
     _broadcastStateIfActive();
     _updateQueue();
